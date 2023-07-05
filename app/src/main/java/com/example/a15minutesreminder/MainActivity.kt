@@ -1,68 +1,72 @@
 package com.example.a15minutesreminder
 
-import android.annotation.SuppressLint
-import android.app.Notification
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
-import android.graphics.Color
-import android.os.Build
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import android.util.Log
 import com.example.a15minutesreminder.databinding.ActivityMainBinding
+
 
 class MainActivity : AppCompatActivity() {
 
-    val CHANNEL_ID = "channelID"
-    val CHANNEL_NAME = "channelName"
-    private val NOTIFICATION_ID = 0
     private lateinit var binding: ActivityMainBinding
 
-    @SuppressLint("MissingPermission")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
-
         setContentView(binding.root)
-        createNotificationChannel()
-        createNotificationChannelTwo()
 
-        val notification = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("Awesome notification")
-            .setContentText("This is contentn text")
-            .setSmallIcon(R.drawable.ic_android_black_24dp)
-            .setPriority(Notification.PRIORITY_HIGH)
-            .build()
+        val CHANNEL_ID = "1"
+        val CHANNEL_NAME = "ALARM"
+        val NOTIFICATION_ID = 1
 
-        val notificationManager = NotificationManagerCompat.from(this)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH)
+        notificationManager.createNotificationChannel(channel)
 
-    binding.btnClickMe.setOnClickListener {
-        NotificationManagerCompat.from(this)
-            .notify(NOTIFICATION_ID, notification)
+
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val notificationIntent = Intent(this, NotificationBroadcastReceiver::class.java)
+        val notificationPendingIntent =
+            PendingIntent.getBroadcast(this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE)
+
+        val stopAlarmIntent = Intent(this, StopAlarmBroadcastReceiver::class.java)
+        val stopAlarmPendingIntent =
+            PendingIntent.getBroadcast(this, 0, stopAlarmIntent, PendingIntent.FLAG_MUTABLE)
+
+
+        fun triggerMillis(interval: Int): Long {
+            val currentTime = System.currentTimeMillis()
+            val timeInterval = interval * 60 * 1000
+            val modulus = currentTime % timeInterval
+            val miliSecondsNeeded = timeInterval - modulus
+            val triggerMillis = currentTime + miliSecondsNeeded
+            Log.d("ALARM", "The trigger millis will be at $triggerMillis")
+            return triggerMillis
+        }
+
+
+        binding.btnClickMe.setOnClickListener {
+            Log.d("ALARM", "onClick called")
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerMillis(15), AlarmManager.INTERVAL_FIFTEEN_MINUTES, notificationPendingIntent)
+        }
+
+        binding.btnTime.setOnClickListener {
+            startActivity(
+                Intent(this, AlarmSettingsActivity::class.java)
+            )
+        }
+
+
+
+
+
+
     }
-
-
-
-    }
-
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
-
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
-    }
-
-    private fun createNotificationChannelTwo() {
-        val channel = NotificationChannel("WOW", "WADIDAW", NotificationManager.IMPORTANCE_HIGH )
-            .apply {
-                lightColor = Color.BLUE
-                enableLights(true)
-            }
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
-    }
-
 }
