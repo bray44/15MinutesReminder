@@ -1,12 +1,15 @@
 package com.example.a15minutesreminder
 
+import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.example.a15minutesreminder.databinding.ActivityAlarmSettingsBinding
+import java.util.Calendar
 
 class AlarmSettingsActivity : AppCompatActivity() {
 
@@ -21,6 +24,14 @@ class AlarmSettingsActivity : AppCompatActivity() {
 
         mViewModel = ViewModelProvider(this)[AlarmSettingsViewModel::class.java]
 
+        mViewModel.getStartTimeAtUi().observe(this) {
+            binding.tvStartTime.text = it
+        }
+
+        mViewModel.getStopTimeAtUi().observe(this) {
+            binding.tvStopTime.text = it
+        }
+
 
         val startAlarmIntent = Intent(this,StartAlarmBroadcastReceiver::class.java )
         val stopAlarmIntent = Intent(this, StopAlarmBroadcastReceiver::class.java)
@@ -31,12 +42,25 @@ class AlarmSettingsActivity : AppCompatActivity() {
         val stopAlarmPendingIntent =
             PendingIntent.getBroadcast(this, 0, stopAlarmIntent, PendingIntent.FLAG_MUTABLE)
 
-        binding.btnStartTime.setOnClickListener {
-            StartTimePickerFragment().show(supportFragmentManager, "time")
+        val startAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+
+
+
+
+        binding.tvStartTime.setOnClickListener {
+            StartTimePickerFragment().show(supportFragmentManager, "start_time")
         }
 
-        binding.button2.setOnClickListener {
-            Log.d("ALARM", "The hour is ${mViewModel.getStartTime()[1]} & the minutes is ${mViewModel.getStartTime()[0]}")
+        binding.tvStopTime.setOnClickListener {
+            StopTimePickerFragment().show(supportFragmentManager, "stop_time")
+        }
+
+        binding.btnSaveAlarmSettings.setOnClickListener {
+            startAlarmManager.setRepeating(AlarmManager.RTC, mViewModel.getStartTime().timeInMillis, AlarmManager.INTERVAL_DAY, startAlarmPendingIntent)
+            startAlarmManager.setRepeating(AlarmManager.RTC, mViewModel.getStopTime().timeInMillis, AlarmManager.INTERVAL_DAY, stopAlarmPendingIntent)
+            Log.d("ALARM", "The alarm will be started at ${mViewModel.getStartTime().timeInMillis}")
+            Log.d("ALARM", "The alarm will be stopped at ${mViewModel.getStopTime().timeInMillis}")
         }
 
 
