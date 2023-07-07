@@ -8,38 +8,39 @@ import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
 import java.util.Calendar
-import kotlin.math.min
 
 class StartTimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
 
     private lateinit var mViewModel: AlarmSettingsViewModel
-    private lateinit var calendar: Calendar
+    private lateinit var timeChosen: Calendar
 
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         mViewModel = ViewModelProvider(requireActivity())[AlarmSettingsViewModel::class.java]
 
-        val hour = mViewModel.getStartTime().get(Calendar.HOUR)
-        val minute = mViewModel.getStartTime().get(Calendar.MINUTE)
+        val hour = mViewModel.getStartTimeAtUi().value!!.startTimeAtUi[0]
+        val minute = mViewModel.getStartTimeAtUi().value!!.startTimeAtUi[1]
 
         return TimePickerDialog(activity, this, hour, minute, false)
     }
 
     override fun onTimeSet(p0: TimePicker?, hour: Int, minute: Int) {
 
-        calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR, hour)
-        calendar.set(Calendar.MINUTE, minute)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+        timeChosen = Calendar.getInstance().apply {
+            set(Calendar.HOUR, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
 
-        mViewModel.setTime(AlarmSettings.START_TIME, calendar)
-        mViewModel.setStartTimeAtUi(hour, minute)
+
+        mViewModel.updateAlarmSettings(AlarmSettings.START_TIME, timeChosen.timeInMillis)
+        mViewModel.updateStartTimeAtUi(hour, minute)
         val time = "$hour:$minute"
         Log.d("ALARM", "Time selected for start: $time")
-        Log.d("ALARM", "The hour is ${mViewModel.getStartTime().get(Calendar.HOUR)} & the minutes is ${mViewModel.getStartTime().get(Calendar.MINUTE)}")
+        Log.d("ALARM", "The hour is ${mViewModel.getStartTime()} & the minutes is ${mViewModel.getStartTime()}")
     }
 
 

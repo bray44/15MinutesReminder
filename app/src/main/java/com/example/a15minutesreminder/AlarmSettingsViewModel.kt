@@ -9,58 +9,61 @@ class AlarmSettingsViewModel(): ViewModel() {
 
 
 
-
-    private val alarmSettings =
-        AlarmSettings(
-            startTime = Calendar.getInstance(),
-            stopTime = Calendar.getInstance(),
-            startTimeAtUi = "00:00",
-            stopTimeAtUi = "00:00"
-        )
-
-    val startTimeAtUiObserver = MutableLiveData<String>(alarmSettings.startTimeAtUi)
-    val stopTimeAtUiObserver = MutableLiveData<String>(alarmSettings.stopTimeAtUi)
+    private val alarmSettings = AlarmSettings(
+        startTime = 0,
+        stopTime = 0,
+        startTimeAtUi = mutableListOf(0,0),
+        stopTimeAtUi = mutableListOf(0,0)
+    )
 
 
-    val _startTimeAtUi: LiveData<String> = startTimeAtUiObserver
-    val _stopTimeAtUi: LiveData<String> = stopTimeAtUiObserver
-
-    fun setStartTimeAtUi(hour: Int, minutes:Int) {
-        startTimeAtUiObserver.value = "$hour:$minutes"
-    }
-
-    fun setStopTimeAtUi(hour: Int, minutes:Int) {
-        stopTimeAtUiObserver.value = "$hour:$minutes"
-    }
+    private val mAlarmSettings = MutableLiveData(alarmSettings)
+    private val _mAlarmSettings: LiveData<AlarmSettings> = mAlarmSettings
 
 
-
-    fun getStartTimeAtUi(): LiveData<String> {
-        return _startTimeAtUi
-    }
-
-    fun getStopTimeAtUi(): LiveData<String> {
-        return _stopTimeAtUi
-    }
+    fun updateAlarmSettings(usage: Int, time: Long) {
 
 
-
-
-
-    fun setTime(usage: Int, time: Calendar) {
-
-        when (usage) {
-            AlarmSettings.START_TIME ->
+            if (usage == AlarmSettings.START_TIME) {
                 alarmSettings.startTime = time
-            AlarmSettings.STOP_TIME -> alarmSettings.stopTime = time
-        }
+                mAlarmSettings.value = alarmSettings
+            } else if (usage == AlarmSettings.STOP_TIME)  {
+                alarmSettings.stopTime = time
+                mAlarmSettings.value = alarmSettings
+            }
+
     }
 
-    fun getStartTime(): Calendar {
+    fun updateStartTimeAtUi(hour: Int, minutes:Int) {
+
+
+        alarmSettings.startTimeAtUi = mutableListOf(hour, minutes)
+        mAlarmSettings.value = alarmSettings
+
+    }
+
+    fun updateStopTimeAtUi(hour: Int, minutes:Int) {
+
+        alarmSettings.stopTimeAtUi = mutableListOf(hour, minutes)
+        mAlarmSettings.value = alarmSettings
+
+    }
+
+    fun getStartTimeAtUi(): LiveData<AlarmSettings> {
+        return _mAlarmSettings
+
+    }
+
+    fun getStopTimeAtUi(): LiveData<AlarmSettings> {
+        return _mAlarmSettings
+    }
+
+
+    fun getStartTime(): Long {
         return alarmSettings.startTime
     }
 
-    fun getStopTime(): Calendar {
+    fun getStopTime(): Long {
         return alarmSettings.stopTime
     }
 
