@@ -12,8 +12,8 @@ data class AlarmSettings(
     val id: Int = 0,
     @ColumnInfo(name = "start_time" ) var startTime: Long,
     @ColumnInfo(name = "stop_time" ) var stopTime: Long,
-    @ColumnInfo(name = "start_time_at_ui" ) var startTimeAtUi: List<Int>,
-    @ColumnInfo(name = "stop_time_at_ui" ) var stopTimeAtUi:  List<Int>,
+    @ColumnInfo(name = "start_time_at_ui" ) var startTimeAtUi: String,
+    @ColumnInfo(name = "stop_time_at_ui" ) var stopTimeAtUi:  String,
 ) {
     companion object {
 

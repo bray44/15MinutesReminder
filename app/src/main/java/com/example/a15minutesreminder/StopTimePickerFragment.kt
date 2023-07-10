@@ -3,7 +3,6 @@ package com.example.a15minutesreminder
 import android.app.Dialog
 import android.app.TimePickerDialog
 import android.os.Bundle
-import android.util.Log
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
@@ -20,8 +19,15 @@ class StopTimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListen
 
         mViewModel = ViewModelProvider(requireActivity())[AlarmSettingsViewModel::class.java]
 
-        val hour = mViewModel.getStartTimeAtUi().value!!.stopTimeAtUi[0]
-        val minute = mViewModel.getStartTimeAtUi().value!!.stopTimeAtUi[1]
+        var hour = 0
+        var minute = 0
+
+        mViewModel.getAlarmSettingsLiveData().observe(this) {
+            hour = it.stopTimeAtUi.substring(0,1).toInt()
+            minute = it.stopTimeAtUi.substring(3,4).toInt()
+
+        }
+
 
         return TimePickerDialog(activity, this, hour, minute, false)
     }
@@ -36,11 +42,9 @@ class StopTimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListen
         }
 
 
-        mViewModel.updateAlarmSettings(AlarmSettings.START_TIME, timeChosen.timeInMillis)
-        mViewModel.updateStopTimeAtUi(hour, minute)
-        val time = "$hour:$minute"
-        Log.d("ALARM", "Time selected for stop: $time")
-        Log.d("ALARM", "The hour is ${mViewModel.getStartTime()} & the minutes is ${mViewModel.getStartTime()}")
+        mViewModel.updateAlarmSettings(AlarmSettings.STOP_TIME, timeChosen.timeInMillis + 43200000) // the number needed because somehow AM-PM is rverse
+        mViewModel.updateTimeAtUi(AlarmSettings.STOP_TIME, hour, minute)
+
     }
 
 

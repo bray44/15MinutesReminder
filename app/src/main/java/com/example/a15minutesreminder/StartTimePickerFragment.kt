@@ -16,14 +16,22 @@ class StartTimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListe
     private lateinit var timeChosen: Calendar
 
 
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         mViewModel = ViewModelProvider(requireActivity())[AlarmSettingsViewModel::class.java]
 
-        val hour = mViewModel.getStartTimeAtUi().value!!.startTimeAtUi[0]
-        val minute = mViewModel.getStartTimeAtUi().value!!.startTimeAtUi[1]
+        var hour = 0
+        var minute = 0
 
-        return TimePickerDialog(activity, this, hour, minute, false)
+        mViewModel.getAlarmSettingsLiveData().observe(this) {
+            hour = it.startTimeAtUi.substring(0,1).toInt()
+            minute = it.startTimeAtUi.substring(3,4).toInt()
+
+        }
+
+
+        return TimePickerDialog(activity, this, hour, minute, true)
     }
 
     override fun onTimeSet(p0: TimePicker?, hour: Int, minute: Int) {
@@ -35,12 +43,14 @@ class StartTimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListe
             set(Calendar.MILLISECOND, 0)
         }
 
+        Log.d("ALARM", "The time in on time set is $hour hour & $minute minute")
+        Log.d("ALARM", "the time on calendar object is ${timeChosen.get(Calendar.HOUR)} hour & ${timeChosen.get(Calendar.MINUTE)}")
 
-        mViewModel.updateAlarmSettings(AlarmSettings.START_TIME, timeChosen.timeInMillis)
-        mViewModel.updateStartTimeAtUi(hour, minute)
-        val time = "$hour:$minute"
-        Log.d("ALARM", "Time selected for start: $time")
-        Log.d("ALARM", "The hour is ${mViewModel.getStartTime()} & the minutes is ${mViewModel.getStartTime()}")
+
+        mViewModel.updateAlarmSettings(AlarmSettings.START_TIME, timeChosen.timeInMillis + 43200000)
+        mViewModel.updateTimeAtUi(AlarmSettings.START_TIME, hour, minute)
+
+
     }
 
 
