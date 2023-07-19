@@ -1,15 +1,12 @@
 package com.example.a15minutesreminder
 
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.example.a15minutesreminder.databinding.ActivityAlarmSettingsBinding
-import java.util.Calendar
+import com.google.android.material.timepicker.MaterialTimePicker
 
 class AlarmSettingsActivity : AppCompatActivity() {
 
@@ -22,61 +19,66 @@ class AlarmSettingsActivity : AppCompatActivity() {
         binding = ActivityAlarmSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
+
+
         mViewModel = ViewModelProvider(this)[AlarmSettingsViewModel::class.java]
 
-        var startTime: Long = 0
-        var stopTime: Long = 0
 
-        mViewModel.getAlarmSettingsLiveData().observe(this) {
-            binding.tvStartTime.text = it.startTimeAtUi
-            binding.tvStopTime.text = it.stopTimeAtUi
-            startTime = it.startTime
-            stopTime = it.stopTime
-            }
+        Log.d("ALARM", "AASASA ${mViewModel.getAlarmSettingsState().startTimeAtUi}")
+
+        binding.tvStartTime.text = mViewModel.getAlarmSettingsState().startTimeAtUi
+        binding.tvStopTime.text = mViewModel.getAlarmSettingsState().stopTimeAtUi
 
 
+        val startTimePicker = MaterialTimePicker.Builder()
+            .setHour(mViewModel.getHour(AlarmSettings.START_TIME))
+            .setMinute(mViewModel.getMinutes(AlarmSettings.START_TIME))
+            .build()
+
+        val stopTimePicker = MaterialTimePicker.Builder()
+            .setHour(mViewModel.getHour(AlarmSettings.STOP_TIME))
+            .setMinute(mViewModel.getMinutes(AlarmSettings.STOP_TIME))
+            .build()
 
 
-        val startAlarmIntent = Intent(this, StartAlarmBroadcastReceiver::class.java)
-        val stopAlarmIntent = Intent(this, StopAlarmBroadcastReceiver::class.java)
-
-        val startAlarmPendingIntent =
-            PendingIntent.getBroadcast(this, 0, startAlarmIntent, PendingIntent.FLAG_MUTABLE)
-
-        val stopAlarmPendingIntent =
-            PendingIntent.getBroadcast(this, 0, stopAlarmIntent, PendingIntent.FLAG_MUTABLE)
-
-        val startAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-
-
-
-
-        binding.tvStartTime.setOnClickListener {
-            StartTimePickerFragment().show(supportFragmentManager, "start_time")
-            }
-
-        binding.tvStopTime.setOnClickListener {
-                StopTimePickerFragment().show(supportFragmentManager, "stop_time")
-            }
-
-        binding.btnSaveAlarmSettings.setOnClickListener {
-            startAlarmManager.setRepeating(
-                    AlarmManager.RTC,
-                    startTime,
-                    AlarmManager.INTERVAL_DAY,
-                    startAlarmPendingIntent
-                )
-            startAlarmManager.setRepeating(
-                    AlarmManager.RTC,
-                    stopTime,
-                    AlarmManager.INTERVAL_DAY,
-                    stopAlarmPendingIntent
-                )
-                mViewModel.insertAlarmSettings()
-            }
-
-
+        startTimePicker.addOnPositiveButtonClickListener {
+            mViewModel.setTimeMilllis(AlarmSettings.START_TIME, startTimePicker)
+            mViewModel.setTimeAtUi(AlarmSettings.START_TIME, startTimePicker)
+            binding.tvStartTime.text = mViewModel.getAlarmSettingsState().startTimeAtUi
         }
 
+        stopTimePicker.addOnPositiveButtonClickListener {
+            mViewModel.setTimeMilllis(AlarmSettings.STOP_TIME, stopTimePicker)
+            mViewModel.setTimeAtUi(AlarmSettings.STOP_TIME, stopTimePicker)
+            binding.tvStopTime.text = mViewModel.getAlarmSettingsState().stopTimeAtUi
+        }
+
+        binding.tvStartTime.setOnClickListener {
+            startTimePicker.show(supportFragmentManager, "START TIME")
+        }
+
+        binding.tvStopTime.setOnClickListener {
+            stopTimePicker.show(supportFragmentManager, "STOP TIME")
+        }
+
+        binding.btnSaveAlarmSettings.setOnClickListener {
+
+            val alarmSettingsState = mViewModel.getAlarmSettingsState()
+            val startTimeAdapted = mViewModel.adaptTimeMillis(alarmSettingsState.startTime)
+            val stopTimeAdapted = mViewModel.adaptTimeMillis(alarmSettingsState.stopTime)
+            Log.d("ALARM", "the start is $startTimeAdapted & the stop is $stopTimeAdapted")
+
+            mViewModel.setIntervalPoints(startTimeAdapted, stopTimeAdapted)
+            mViewModel.updateAlarmSettingsToDb(alarmSettingsState)
+
+            startActivity(Intent(this, MainActivity::class.java))/// somehow I need to make new instace of main so, the viewmodel is updated
+            finish()
+
+        }
     }
+
+
+
+}
+

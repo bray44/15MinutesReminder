@@ -1,55 +1,44 @@
 package com.example.a15minutesreminder
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
+import com.google.android.material.timepicker.MaterialTimePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class AlarmSettingsViewModel(application: Application): AndroidViewModel(application) {
 
-
     private val db by lazy {
-        Room.databaseBuilder(
-            application,
-            AlarmSettingsDatabase::class.java,
-            "alarm-settings-database"
-        ).build().dao()
+        AlarmSettingsDatabase.getDatabase(application).dao()
     }
 
-    private val alarmSettings = AlarmSettings(
-        startTime = 0,
-        stopTime = 0,
-        startTimeAtUi = "00:00",
-        stopTimeAtUi = "00:00"
-    )
+    private var alarmSettings = db.getAlarmSettings()
 
-
-
-
-    private val mAlarmSettings = MutableLiveData(alarmSettings)
-    private val _mAlarmSettings: LiveData<AlarmSettings> = mAlarmSettings
-
-
-    fun insertAlarmSettings() {
-        viewModelScope.launch (Dispatchers.IO) {
-            db.insertAlarmSettings(alarmSettings)
+    fun updateAlarmSettingsToDb(alarmSettings: AlarmSettings) {
+        viewModelScope.launch(Dispatchers.IO) {
+            db.updateAlarmSettings(alarmSettings)
         }
     }
 
+    fun getAlarmSettingsState(): AlarmSettings {
+        return alarmSettings
+    }
 
-    fun updateAlarmSettings(usage: Int, time: Long) {
+    fun setIntervalPoints(startPoints: Long, endPoints: Long){
 
-        if (usage == AlarmSettings.START_TIME) {
-                alarmSettings.startTime = time
-                mAlarmSettings.value = alarmSettings
-            } else if (usage == AlarmSettings.STOP_TIME)  {
-                alarmSettings.stopTime = time
-                mAlarmSettings.value = alarmSettings
-            }
+        var points = ((endPoints - startPoints)/(15 * 60 * 1000)).toInt()
+
+        if (points <= 0) {
+            points += 96
+        }
+
+        val alarmSettings = getAlarmSettingsState()
+
+        alarmSettings.intervalPoints = points
 
         viewModelScope.launch(Dispatchers.IO) {
             db.updateAlarmSettings(alarmSettings)
@@ -59,35 +48,69 @@ class AlarmSettingsViewModel(application: Application): AndroidViewModel(applica
 
 
 
-    fun updateTimeAtUi(type: Int, hour: Int, minutes:Int) {
+    fun setTimeMilllis(type: Int, timePicker: MaterialTimePicker) {
+        val timeChosen = Calendar.getInstance().apply {
+            set(Calendar.HOUR, timePicker.hour)
+            set(Calendar.MINUTE, timePicker.minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis + 43200000 //this long number is 12 hours, bcoz somehow its ketuker between AM and PM
 
-
-        val mHour = hour.toString().padStart(2, '0') // change number frmt from 0 to 00
-
-        val mMinute = minutes.toString().padStart(2, '0') // change number frmt from 0 to 00
 
         if (type == AlarmSettings.START_TIME) {
-            alarmSettings.startTimeAtUi = "$mHour:$mMinute"
-            mAlarmSettings.value = alarmSettings
+            alarmSettings.startTime = timeChosen
         } else {
-            alarmSettings.stopTimeAtUi = "$mHour:$mMinute"
-            mAlarmSettings.value = alarmSettings
+            alarmSettings.stopTime = timeChosen
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            db.updateAlarmSettings(alarmSettings)
+    }
+
+    fun adaptTimeMillis(timeChosen: Long): Long { // to check apakah time nya udh lewat atau belum
+        var timeChosen1 = timeChosen
+        if (timeChosen1 > System.currentTimeMillis()) {
+            timeChosen1 -= 86400000
         }
+        return timeChosen1
+    }
+
+
+    fun setTimeAtUi(type: Int, timePicker: MaterialTimePicker) {
+        val hour = timePicker.hour.toString().padStart(2, '0')
+        val minute = timePicker.minute.toString().padStart(2, '0')
+
+        if (type == AlarmSettings.START_TIME) {
+            alarmSettings.startTimeAtUi = "$hour:$minute"
+            Log.d("ALARM", "the setTimeAtUi and ${alarmSettings.startTimeAtUi}")
+        } else {
+            alarmSettings.stopTimeAtUi = "$hour:$minute"
+        }
+
+
+    }
+
+    fun getHour(alarmSettings: Int): Int {
+
+        return if(alarmSettings == AlarmSettings.START_TIME) {
+            db.getAlarmSettings().startTimeAtUi.substring(0, 2).toInt()
+        } else {
+            db.getAlarmSettings().stopTimeAtUi.substring(0, 2).toInt()
+        }
+
+    }
+
+    fun getMinutes(alarmSettings: Int): Int {
+
+        return if(alarmSettings == AlarmSettings.START_TIME) {
+            db.getAlarmSettings().startTimeAtUi.substring(3).toInt()
+        } else {
+            db.getAlarmSettings().stopTimeAtUi.substring(3).toInt()
+        }
+
     }
 
     fun getAlarmSettingsLiveData(): LiveData<AlarmSettings> {
-
-        viewModelScope.launch(Dispatchers.IO) {
-            db.updateAlarmSettings(alarmSettings)
-        }
-        return db.getAlarmSettings()
+        return db.getAlarmSettingsLiveData()
     }
-
-
 
 
 

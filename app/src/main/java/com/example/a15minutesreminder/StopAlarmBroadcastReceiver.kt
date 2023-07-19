@@ -12,11 +12,11 @@ class StopAlarmBroadcastReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
 
         val stopAlarmAlarmManager = context?.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, NotificationBroadcastReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_MUTABLE)
+        val stopIntent = Intent(context, NotificationBroadcastReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(context, 0, stopIntent, PendingIntent.FLAG_MUTABLE)
 
         stopAlarmAlarmManager.cancel(pendingIntent)
-        Log.d("ALARM", "Alarm stopped")
+        Log.d("ALARM", "StopAlarmBroadcast called")
 
 
     }

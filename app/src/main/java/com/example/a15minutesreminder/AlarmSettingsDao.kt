@@ -9,19 +9,16 @@ import androidx.room.Update
 
 @Dao
 interface AlarmSettingsDao {
-
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAlarmSettings(alarmSettings: AlarmSettings)
 
     @Update
-    suspend fun updateAlarmSettings(alarmSettings: AlarmSettings)
+    fun updateAlarmSettings(alarmSettings: AlarmSettings)
 
     @Query("SELECT * FROM alarm_settings WHERE id = 0")
-    fun getAlarmSettings(): LiveData<AlarmSettings>
+    fun getAlarmSettingsLiveData(): LiveData<AlarmSettings>
 
-
-
-
+    @Query("SELECT * FROM alarm_settings WHERE id = 0")
+    fun getAlarmSettings(): AlarmSettings
 
 }

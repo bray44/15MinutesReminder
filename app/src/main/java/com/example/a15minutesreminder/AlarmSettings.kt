@@ -14,13 +14,10 @@ data class AlarmSettings(
     @ColumnInfo(name = "stop_time" ) var stopTime: Long,
     @ColumnInfo(name = "start_time_at_ui" ) var startTimeAtUi: String,
     @ColumnInfo(name = "stop_time_at_ui" ) var stopTimeAtUi:  String,
+    @ColumnInfo(name = "interval_points") var intervalPoints: Int
 ) {
     companion object {
-
-            const val START_TIME = 1
-            const val STOP_TIME = 2
-
+        const val START_TIME = 0
+        const val STOP_TIME = 1
     }
-
-
 }

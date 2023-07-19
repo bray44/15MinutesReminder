@@ -12,16 +12,21 @@ import androidx.core.app.NotificationManagerCompat
 
 class NotificationBroadcastReceiver: BroadcastReceiver() {
 
-    override fun onReceive(context: Context, p1: Intent?) {
+    override fun onReceive(context: Context, intent: Intent?) {
         val CHANNEL_ID = "1"
         val NOTIFICATION_ID = 1
 
-        Log.d("ALARM", "onReceive called")
+        Log.d("ALARM", "NotificationBroadcast called")
+
+        val db = AlarmSettingsDatabase.getDatabase(context).dao()
+
+        val alarmSettings = db.getAlarmSettings()
+        val intervalPoints = alarmSettings.intervalPoints
 
         val notificationManagerCompat = NotificationManagerCompat.from(context)
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setContentTitle("Awesome notification")
-            .setContentText("This is contentn text")
+            .setContentText("You have $intervalPoints left")
             .setSmallIcon(R.drawable.ic_android_black_24dp)
             .build()
 
@@ -30,17 +35,12 @@ class NotificationBroadcastReceiver: BroadcastReceiver() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+          //do permission
             return
         }
         notificationManagerCompat.notify(NOTIFICATION_ID, notification)
 
+        alarmSettings.intervalPoints = intervalPoints - 1
+        db.updateAlarmSettings(alarmSettings)
     }
-
 }
