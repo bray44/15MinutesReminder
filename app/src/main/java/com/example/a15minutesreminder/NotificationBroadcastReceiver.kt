@@ -19,14 +19,13 @@ class NotificationBroadcastReceiver: BroadcastReceiver() {
         Log.d("ALARM", "NotificationBroadcast called")
 
         val db = AlarmSettingsDatabase.getDatabase(context).dao()
-
         val alarmSettings = db.getAlarmSettings()
-        val intervalPoints = alarmSettings.intervalPoints
+        val intervalPoints = alarmSettings.mutableIntervalPoints
 
         val notificationManagerCompat = NotificationManagerCompat.from(context)
         val notification = Notification.Builder(context, CHANNEL_ID)
-            .setContentTitle("Awesome notification")
-            .setContentText("You have $intervalPoints left")
+            .setContentTitle("Time Reminder")
+            .setContentText("You have $intervalPoints points left today.")
             .setSmallIcon(R.drawable.ic_android_black_24dp)
             .build()
 
@@ -40,7 +39,7 @@ class NotificationBroadcastReceiver: BroadcastReceiver() {
         }
         notificationManagerCompat.notify(NOTIFICATION_ID, notification)
 
-        alarmSettings.intervalPoints = intervalPoints - 1
+        alarmSettings.mutableIntervalPoints = intervalPoints - 1
         db.updateAlarmSettings(alarmSettings)
     }
 }

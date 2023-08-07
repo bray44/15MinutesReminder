@@ -1,10 +1,7 @@
 package com.example.a15minutesreminder
 
-import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -24,105 +21,52 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val CHANNEL_ID = "1"
-        val CHANNEL_NAME = "ALARM"
+        setNotification()
+
+        val alarmScheduler = AlarmScheduler(this)
 
         mViewModel = ViewModelProvider(this)[AlarmSettingsViewModel::class.java]
 
-        val alarmSettingsState = mViewModel.getAlarmSettingsState()
+        var alarmSettingsState = mViewModel.getAlarmSettings()
+
 
         mViewModel.getAlarmSettingsLiveData().observe(this) {
-            alarmSettingsState.startTime = it.startTime
-            alarmSettingsState.startTimeAtUi = it.startTimeAtUi
-            alarmSettingsState.stopTime = it.stopTime
-            alarmSettingsState.stopTimeAtUi = it.stopTimeAtUi
-
+            alarmSettingsState = it
+            alarmSettingsState.alarmStatus = it.alarmStatus
+            binding.tvPointsLeft.text = "You have ${it.mutableIntervalPoints} points left"
+            binding.tvCountDown.text = setNearestTriggerTime(it.mutableIntervalPoints)
+            binding.btnClickMe.text = setButtonState(it.alarmStatus)
         }
-
-
-
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH)
-        notificationManager.createNotificationChannel(channel)
-
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val notificationIntent = Intent(this, NotificationBroadcastReceiver::class.java)
-
-        val notificationPendingIntent =
-            PendingIntent.getBroadcast(this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE)
-
-        val startAlarmPendingIntent = PendingIntent.getBroadcast(
-            this,
-            0,
-            Intent(this, StartAlarmBroadcastReceiver::class.java),
-            PendingIntent.FLAG_MUTABLE)
-
-        val stopAlarmPendingIntent = PendingIntent.getBroadcast(this,
-            0,
-            Intent(this, StopAlarmBroadcastReceiver::class.java),
-            PendingIntent.FLAG_MUTABLE)
-
-        fun findTheNearest15Min(interval: Int): Long {
-            val currentTime = System.currentTimeMillis()
-            val timeInterval = interval * 60 * 1000
-            val modulus = currentTime % timeInterval
-            val miliSecondsNeeded = timeInterval - modulus
-            val triggerMillis = currentTime + miliSecondsNeeded
-            Log.d("ALARM", "The trigger millis will be at $triggerMillis")
-            return triggerMillis
-        }
-
 
         binding.btnClickMe.setOnClickListener {
 
-
-
-            val startTimeChecked = mViewModel.adaptTimeMillis(alarmSettingsState.startTime)
-
-            val stopTimeChecked = mViewModel.adaptTimeMillis(alarmSettingsState.stopTime)
-
-            val currentTime = System.currentTimeMillis()
-
-            var firstTriggerToStartAlarm = alarmSettingsState.startTime
-
-
-
-            if (currentTime in startTimeChecked..stopTimeChecked) {
-                firstTriggerToStartAlarm = findTheNearest15Min(15)
-                Log.d("ALARM", "The is called}")
-                mViewModel.setIntervalPoints(firstTriggerToStartAlarm, stopTimeChecked)
-
-
-            } else {
-                mViewModel.setIntervalPoints(startTimeChecked, stopTimeChecked)
-
+            if (alarmSettingsState.alarmStatus) {
+                Log.d("ALARM", "ALARM is read as true")
+                mViewModel.setAlarmStatusTo(false)
+                alarmScheduler.cancelAllAlarm()
             }
+            else
+            {
+                Log.d("ALARM", "ALARM is read as false")
 
 
+                val triggerMillisStartAlarm = Time.convertToMillis(alarmSettingsState.startTimeAtUi)
+                val triggerMillisStopAlarm = Time.convertToMillis(alarmSettingsState.stopTimeAtUi)
 
-            // Start repeating alarm based on trigger
-            alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                firstTriggerToStartAlarm,
-                AlarmManager.INTERVAL_FIFTEEN_MINUTES,
-                notificationPendingIntent
-            )
+                if (Time.timeNowIsInsideAlarmWindow(alarmSettingsState)) {
 
-            // Starting repeating alarm automatically
-            alarmManager.setRepeating(
-                AlarmManager.RTC,
-                firstTriggerToStartAlarm,
-                AlarmManager.INTERVAL_DAY,
-                startAlarmPendingIntent
-            )
+                    mViewModel.setMutableIntervalPoints(alarmSettingsState, Time.getNearest15Minutes(), alarmSettingsState.stopTimeAtUi)
+                    alarmScheduler.setRepeatingAlarmNow(triggerTime = Time.getNearest15MinutesinMillis())
 
-            // Stopping alarm automatically
-            alarmManager.setRepeating(
-                AlarmManager.RTC,
-                alarmSettingsState.stopTime,
-                AlarmManager.INTERVAL_DAY,
-                stopAlarmPendingIntent
-            )
+                }
+
+                mViewModel.updateAlarmSettingsToDb(alarmSettingsState)
+
+                mViewModel.setAlarmStatusTo(true)
+
+                alarmScheduler.setStartAlarm(triggerTime = triggerMillisStartAlarm)
+                alarmScheduler.setStopAlarm(triggerTime = triggerMillisStopAlarm)
+            }
         }
 
         binding.btnTime.setOnClickListener {
@@ -132,6 +76,42 @@ class MainActivity : AppCompatActivity() {
 
 
 
+    private fun setNotification() {
+        val CHANNEL_ID = "1"
+        val CHANNEL_NAME = "ALARM"
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val channel =
+            NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH)
+        notificationManager.createNotificationChannel(channel)
+    }
 
+
+
+
+
+
+    private fun setButtonState(status: Boolean): String {
+
+        return if (status) {
+            "Pause"
+        } else {
+            "Start"
+        }
+
+    }
+
+
+
+    private fun setNearestTriggerTime(uselessInput: Int): String {
+
+        val alarmSettingsState = mViewModel.getAlarmSettings()
+
+        return if (Time.timeNowIsInsideAlarmWindow(alarmSettingsState)) {
+            Time.getNearest15Minutes()
+        } else {
+            alarmSettingsState.startTimeAtUi
+        }
+
+    }
 
 }

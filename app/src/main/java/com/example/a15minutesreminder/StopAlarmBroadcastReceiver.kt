@@ -1,7 +1,5 @@
 package com.example.a15minutesreminder
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,13 +9,10 @@ class StopAlarmBroadcastReceiver: BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
-        val stopAlarmAlarmManager = context?.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val stopIntent = Intent(context, NotificationBroadcastReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, stopIntent, PendingIntent.FLAG_MUTABLE)
-
-        stopAlarmAlarmManager.cancel(pendingIntent)
         Log.d("ALARM", "StopAlarmBroadcast called")
+        val alarmScheduler = AlarmScheduler(context!!)
 
+        alarmScheduler.cancelRepeatingAlarm()
 
     }
 }

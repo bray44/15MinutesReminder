@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 
-@Database(entities = [AlarmSettings::class], version = 1)
+@Database(entities = [AlarmSettings::class], version = 3)
 abstract class AlarmSettingsDatabase: RoomDatabase() {
 
 
@@ -26,7 +26,7 @@ abstract class AlarmSettingsDatabase: RoomDatabase() {
                context.applicationContext,
                AlarmSettingsDatabase::class.java,
                "alarm-settings-database"
-            ).createFromAsset("database/alarm.db")
+            ).createFromAsset("database/alarmdbv3.db")
                .allowMainThreadQueries()
                .build()
             INSTANCE = instance
